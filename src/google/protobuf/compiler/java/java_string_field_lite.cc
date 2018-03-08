@@ -321,7 +321,7 @@ void ImmutableStringFieldLiteGenerator::
 GenerateParsingCode(io::Printer* printer) const {
   if (CheckUtf8(descriptor_)) {
     printer->Print(variables_,
-      "String s = input.readStringRequireUtf8();\n"
+      "java.lang.String s = input.readStringRequireUtf8();\n"
       "$set_has_field_bit_message$\n"
       "$name$_ = s;\n");
   } else {
@@ -330,7 +330,7 @@ GenerateParsingCode(io::Printer* printer) const {
     // spurious intermediary ByteString allocations, cutting overall allocations
     // in half.
     printer->Print(variables_,
-      "String s = input.readString();\n"
+      "java.lang.String s = input.readString();\n"
       "$set_has_field_bit_message$\n"
       "$name$_ = s;\n");
   }
@@ -525,7 +525,7 @@ void ImmutableStringOneofFieldLiteGenerator::
 GenerateParsingCode(io::Printer* printer) const {
   if (CheckUtf8(descriptor_)) {
     printer->Print(variables_,
-      "String s = input.readStringRequireUtf8();\n"
+      "java.lang.String s = input.readStringRequireUtf8();\n"
       "$set_oneof_case_message$;\n"
       "$oneof_name$_ = s;\n");
   } else {
@@ -534,7 +534,7 @@ GenerateParsingCode(io::Printer* printer) const {
     // spurious intermediary ByteString allocations, cutting overall allocations
     // in half.
     printer->Print(variables_,
-      "String s = input.readString();\n"
+      "java.lang.String s = input.readString();\n"
       "$set_oneof_case_message$;\n"
       "$oneof_name$_ = s;\n");
   }
@@ -782,14 +782,14 @@ void RepeatedImmutableStringFieldLiteGenerator::
 GenerateParsingCode(io::Printer* printer) const {
   if (CheckUtf8(descriptor_)) {
     printer->Print(variables_,
-    "String s = input.readStringRequireUtf8();\n");
+    "java.lang.String s = input.readStringRequireUtf8();\n");
   } else {
     // Lite runtime should attempt to reduce allocations by attempting to
     // construct the string directly from the input stream buffer. This avoids
     // spurious intermediary ByteString allocations, cutting overall allocations
     // in half.
     printer->Print(variables_,
-    "String s = input.readString();\n");
+    "java.lang.String s = input.readString();\n");
   }
   printer->Print(variables_,
     "if (!$is_mutable$) {\n"
