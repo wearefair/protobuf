@@ -41,26 +41,30 @@
 
 namespace google {
 namespace protobuf {
-  namespace compiler {
-    namespace java {
-      class Context;           // context.h
-      class ClassNameResolver; // name_resolver.h
-    }
-  }
-}
+namespace compiler {
+namespace java {
+class Context;            // context.h
+class ClassNameResolver;  // name_resolver.h
+}  // namespace java
+}  // namespace compiler
+}  // namespace protobuf
+}  // namespace google
 
+namespace google {
 namespace protobuf {
 namespace compiler {
 namespace java {
 
 class ImmutableMessageFieldGenerator : public ImmutableFieldGenerator {
  public:
-  explicit ImmutableMessageFieldGenerator(
-      const FieldDescriptor* descriptor, int messageBitIndex,
-      int builderBitIndex, Context* context);
+  explicit ImmutableMessageFieldGenerator(const FieldDescriptor* descriptor,
+                                          int messageBitIndex,
+                                          int builderBitIndex,
+                                          Context* context);
   ~ImmutableMessageFieldGenerator();
 
-  // implements ImmutableFieldGenerator ---------------------------------------
+  // implements ImmutableFieldGenerator
+  // ---------------------------------------
   int GetNumBitsForMessage() const;
   int GetNumBitsForBuilder() const;
   void GenerateInterfaceMembers(io::Printer* printer) const;
@@ -77,23 +81,23 @@ class ImmutableMessageFieldGenerator : public ImmutableFieldGenerator {
   void GenerateFieldBuilderInitializationCode(io::Printer* printer) const;
   void GenerateEqualsCode(io::Printer* printer) const;
   void GenerateHashCode(io::Printer* printer) const;
+  void GenerateKotlinDslMembers(io::Printer* printer) const;
 
-  string GetBoxedType() const;
+  std::string GetBoxedType() const;
 
  protected:
   const FieldDescriptor* descriptor_;
-  std::map<string, string> variables_;
-  const int messageBitIndex_;
-  const int builderBitIndex_;
-  Context* context_;
+  std::map<std::string, std::string> variables_;
   ClassNameResolver* name_resolver_;
 
   void PrintNestedBuilderCondition(io::Printer* printer,
-      const char* regular_case, const char* nested_builder_case) const;
+                                   const char* regular_case,
+                                   const char* nested_builder_case) const;
   void PrintNestedBuilderFunction(io::Printer* printer,
-      const char* method_prototype, const char* regular_case,
-      const char* nested_builder_case,
-      const char* trailing_code) const;
+                                  const char* method_prototype,
+                                  const char* regular_case,
+                                  const char* nested_builder_case,
+                                  const char* trailing_code) const;
 
  private:
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(ImmutableMessageFieldGenerator);
@@ -102,9 +106,9 @@ class ImmutableMessageFieldGenerator : public ImmutableFieldGenerator {
 class ImmutableMessageOneofFieldGenerator
     : public ImmutableMessageFieldGenerator {
  public:
-  ImmutableMessageOneofFieldGenerator(
-      const FieldDescriptor* descriptor, int messageBitIndex,
-      int builderBitIndex, Context* context);
+  ImmutableMessageOneofFieldGenerator(const FieldDescriptor* descriptor,
+                                      int messageBitIndex, int builderBitIndex,
+                                      Context* context);
   ~ImmutableMessageOneofFieldGenerator();
 
   void GenerateMembers(io::Printer* printer) const;
@@ -143,23 +147,23 @@ class RepeatedImmutableMessageFieldGenerator : public ImmutableFieldGenerator {
   void GenerateFieldBuilderInitializationCode(io::Printer* printer) const;
   void GenerateEqualsCode(io::Printer* printer) const;
   void GenerateHashCode(io::Printer* printer) const;
+  void GenerateKotlinDslMembers(io::Printer* printer) const;
 
-  string GetBoxedType() const;
+  std::string GetBoxedType() const;
 
  protected:
   const FieldDescriptor* descriptor_;
-  std::map<string, string> variables_;
-  const int messageBitIndex_;
-  const int builderBitIndex_;
-  Context* context_;
+  std::map<std::string, std::string> variables_;
   ClassNameResolver* name_resolver_;
 
   void PrintNestedBuilderCondition(io::Printer* printer,
-      const char* regular_case, const char* nested_builder_case) const;
+                                   const char* regular_case,
+                                   const char* nested_builder_case) const;
   void PrintNestedBuilderFunction(io::Printer* printer,
-      const char* method_prototype, const char* regular_case,
-      const char* nested_builder_case,
-      const char* trailing_code) const;
+                                  const char* method_prototype,
+                                  const char* regular_case,
+                                  const char* nested_builder_case,
+                                  const char* trailing_code) const;
 
  private:
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(RepeatedImmutableMessageFieldGenerator);
@@ -168,6 +172,6 @@ class RepeatedImmutableMessageFieldGenerator : public ImmutableFieldGenerator {
 }  // namespace java
 }  // namespace compiler
 }  // namespace protobuf
-
 }  // namespace google
+
 #endif  // GOOGLE_PROTOBUF_COMPILER_JAVA_MESSAGE_FIELD_H__

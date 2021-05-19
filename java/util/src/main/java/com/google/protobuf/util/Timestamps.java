@@ -36,8 +36,10 @@ import static com.google.common.math.LongMath.checkedAdd;
 import static com.google.common.math.LongMath.checkedMultiply;
 import static com.google.common.math.LongMath.checkedSubtract;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
+import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
@@ -91,7 +93,7 @@ public final class Timestamps {
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH);
     GregorianCalendar calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
     // We use Proleptic Gregorian Calendar (i.e., Gregorian calendar extends
-    // backwards to year one) for timestamp formating.
+    // backwards to year one) for timestamp formatting.
     calendar.setGregorianChange(new Date(Long.MIN_VALUE));
     sdf.setCalendar(calendar);
     return sdf;
@@ -99,34 +101,36 @@ public final class Timestamps {
 
   private Timestamps() {}
 
-  private static final Comparator<Timestamp> COMPARATOR =
-      new Comparator<Timestamp>() {
-        @Override
-        public int compare(Timestamp t1, Timestamp t2) {
-          checkValid(t1);
-          checkValid(t2);
-          int secDiff = Long.compare(t1.getSeconds(), t2.getSeconds());
-          return (secDiff != 0) ? secDiff : Integer.compare(t1.getNanos(), t2.getNanos());
-        }
-      };
+  private static enum TimestampComparator implements Comparator<Timestamp>, Serializable {
+    INSTANCE;
 
-  /**
-   * Returns a {@link Comparator} for {@link Timestamp}s which sorts in increasing chronological
-   * order. Nulls and invalid {@link Timestamp}s are not allowed (see {@link #isValid}).
-   */
-  public static Comparator<Timestamp> comparator() {
-    return COMPARATOR;
+    @Override
+    public int compare(Timestamp t1, Timestamp t2) {
+      checkValid(t1);
+      checkValid(t2);
+      int secDiff = Long.compare(t1.getSeconds(), t2.getSeconds());
+      return (secDiff != 0) ? secDiff : Integer.compare(t1.getNanos(), t2.getNanos());
+    }
   }
 
   /**
-   * Compares two timestamps. The value returned is identical to what would be returned by:
-   * {@code Timestamps.comparator().compare(x, y)}.
+   * Returns a {@link Comparator} for {@link Timestamp Timestamps} which sorts in increasing
+   * chronological order. Nulls and invalid {@link Timestamp Timestamps} are not allowed (see
+   * {@link #isValid}). The returned comparator is serializable.
+   */
+  public static Comparator<Timestamp> comparator() {
+    return TimestampComparator.INSTANCE;
+  }
+
+  /**
+   * Compares two timestamps. The value returned is identical to what would be returned by: {@code
+   * Timestamps.comparator().compare(x, y)}.
    *
    * @return the value {@code 0} if {@code x == y}; a value less than {@code 0} if {@code x < y};
    *     and a value greater than {@code 0} if {@code x > y}
    */
   public static int compare(Timestamp x, Timestamp y) {
-    return COMPARATOR.compare(x, y);
+    return TimestampComparator.INSTANCE.compare(x, y);
   }
 
   /**
@@ -150,6 +154,7 @@ public final class Timestamps {
    * <p><b>Note:</b> Negative second values with fractional seconds must still have non-negative
    * nanos values that count forward in time.
    */
+  @SuppressWarnings("GoodTime") // this is a legacy conversion API
   public static boolean isValid(long seconds, int nanos) {
     if (seconds < TIMESTAMP_SECONDS_MIN || seconds > TIMESTAMP_SECONDS_MAX) {
       return false;
@@ -161,16 +166,29 @@ public final class Timestamps {
   }
 
   /** Throws an {@link IllegalArgumentException} if the given {@link Timestamp} is not valid. */
+  @CanIgnoreReturnValue
   public static Timestamp checkValid(Timestamp timestamp) {
     long seconds = timestamp.getSeconds();
     int nanos = timestamp.getNanos();
     if (!isValid(seconds, nanos)) {
-        throw new IllegalArgumentException(String.format(
-            "Timestamp is not valid. See proto definition for valid values. "
-            + "Seconds (%s) must be in range [-62,135,596,800, +253,402,300,799]. "
-            + "Nanos (%s) must be in range [0, +999,999,999].", seconds, nanos));
+      throw new IllegalArgumentException(
+          String.format(
+              "Timestamp is not valid. See proto definition for valid values. "
+                  + "Seconds (%s) must be in range [-62,135,596,800, +253,402,300,799]. "
+                  + "Nanos (%s) must be in range [0, +999,999,999].",
+              seconds, nanos));
     }
     return timestamp;
+  }
+
+  /**
+   * Builds the given builder and throws an {@link IllegalArgumentException} if it is not valid. See
+   * {@link #checkValid(Timestamp)}.
+   *
+   * @return A valid, built {@link Timestamp}.
+   */
+  public static Timestamp checkValid(Timestamp.Builder timestampBuilder) {
+    return checkValid(timestampBuilder.build());
   }
 
   /**
@@ -266,6 +284,7 @@ public final class Timestamps {
   }
 
   /** Create a Timestamp from the number of seconds elapsed from the epoch. */
+  @SuppressWarnings("GoodTime") // this is a legacy conversion API
   public static Timestamp fromSeconds(long seconds) {
     return normalizedTimestamp(seconds, 0);
   }
@@ -276,11 +295,13 @@ public final class Timestamps {
    * <p>The result will be rounded down to the nearest second. E.g., if the timestamp represents
    * "1969-12-31T23:59:59.999999999Z", it will be rounded to -1 second.
    */
+  @SuppressWarnings("GoodTime") // this is a legacy conversion API
   public static long toSeconds(Timestamp timestamp) {
     return checkValid(timestamp).getSeconds();
   }
 
   /** Create a Timestamp from the number of milliseconds elapsed from the epoch. */
+  @SuppressWarnings("GoodTime") // this is a legacy conversion API
   public static Timestamp fromMillis(long milliseconds) {
     return normalizedTimestamp(
         milliseconds / MILLIS_PER_SECOND,
@@ -293,6 +314,7 @@ public final class Timestamps {
    * <p>The result will be rounded down to the nearest millisecond. E.g., if the timestamp
    * represents "1969-12-31T23:59:59.999999999Z", it will be rounded to -1 millisecond.
    */
+  @SuppressWarnings("GoodTime") // this is a legacy conversion API
   public static long toMillis(Timestamp timestamp) {
     checkValid(timestamp);
     return checkedAdd(
@@ -301,6 +323,7 @@ public final class Timestamps {
   }
 
   /** Create a Timestamp from the number of microseconds elapsed from the epoch. */
+  @SuppressWarnings("GoodTime") // this is a legacy conversion API
   public static Timestamp fromMicros(long microseconds) {
     return normalizedTimestamp(
         microseconds / MICROS_PER_SECOND,
@@ -313,6 +336,7 @@ public final class Timestamps {
    * <p>The result will be rounded down to the nearest microsecond. E.g., if the timestamp
    * represents "1969-12-31T23:59:59.999999999Z", it will be rounded to -1 microsecond.
    */
+  @SuppressWarnings("GoodTime") // this is a legacy conversion API
   public static long toMicros(Timestamp timestamp) {
     checkValid(timestamp);
     return checkedAdd(
@@ -321,12 +345,14 @@ public final class Timestamps {
   }
 
   /** Create a Timestamp from the number of nanoseconds elapsed from the epoch. */
+  @SuppressWarnings("GoodTime") // this is a legacy conversion API
   public static Timestamp fromNanos(long nanoseconds) {
     return normalizedTimestamp(
         nanoseconds / NANOS_PER_SECOND, (int) (nanoseconds % NANOS_PER_SECOND));
   }
 
   /** Convert a Timestamp to the number of nanoseconds elapsed from the epoch. */
+  @SuppressWarnings("GoodTime") // this is a legacy conversion API
   public static long toNanos(Timestamp timestamp) {
     checkValid(timestamp);
     return checkedAdd(

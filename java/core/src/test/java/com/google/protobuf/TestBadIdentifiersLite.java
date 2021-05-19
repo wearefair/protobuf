@@ -45,8 +45,10 @@ public final class TestBadIdentifiersLite extends TestCase {
 
   public void testCompilation() {
     // If this compiles, it means the generation was correct.
-    TestBadIdentifiersProto.Deprecated.newBuilder();
-    TestBadIdentifiersProto.Override.newBuilder();
+    TestBadIdentifiersProto.Deprecated.Builder builder1 =
+        TestBadIdentifiersProto.Deprecated.newBuilder();
+    TestBadIdentifiersProto.Override.Builder builder2 =
+        TestBadIdentifiersProto.Override.newBuilder();
   }
 
   public void testConflictingFieldNames() throws Exception {
@@ -75,9 +77,15 @@ public final class TestBadIdentifiersLite extends TestCase {
     assertEquals(0, message.getInt32FieldList31());
 
     assertEquals(0, message.getInt64FieldCount());
-    assertEquals(0L, message.getExtension(
-        TestBadIdentifiersProto.TestConflictingFieldNames.int64FieldCount).longValue());
-    assertEquals(0L, message.getExtension(
-        TestBadIdentifiersProto.TestConflictingFieldNames.int64FieldList).longValue());
+    assertEquals(
+        0L,
+        message
+            .getExtension(TestBadIdentifiersProto.TestConflictingFieldNames.int64FieldCount)
+            .longValue());
+    assertEquals(
+        0L,
+        message
+            .getExtension(TestBadIdentifiersProto.TestConflictingFieldNames.int64FieldList)
+            .longValue());
   }
 }

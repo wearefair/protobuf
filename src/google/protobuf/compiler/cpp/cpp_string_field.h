@@ -63,18 +63,9 @@ class StringFieldGenerator : public FieldGenerator {
   void GenerateConstructorCode(io::Printer* printer) const;
   void GenerateCopyConstructorCode(io::Printer* printer) const;
   void GenerateDestructorCode(io::Printer* printer) const;
-  void GenerateDefaultInstanceAllocator(io::Printer* printer) const;
-  void GenerateMergeFromCodedStream(io::Printer* printer) const;
-  void GenerateSerializeWithCachedSizes(io::Printer* printer) const;
   void GenerateSerializeWithCachedSizesToArray(io::Printer* printer) const;
   void GenerateByteSize(io::Printer* printer) const;
-
-  bool MergeFromCodedStreamNeedsArena() const;
-
- protected:
-  const FieldDescriptor* descriptor_;
-  std::map<string, string> variables_;
-  const bool lite_;
+  void GenerateConstinitInitializer(io::Printer* printer) const;
 
  private:
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(StringFieldGenerator);
@@ -95,11 +86,8 @@ class StringOneofFieldGenerator : public StringFieldGenerator {
   void GenerateMessageClearingCode(io::Printer* printer) const;
   void GenerateSwappingCode(io::Printer* printer) const;
   void GenerateConstructorCode(io::Printer* printer) const;
-  void GenerateDestructorCode(io::Printer* printer) const;
-  void GenerateMergeFromCodedStream(io::Printer* printer) const;
 
  private:
-  const bool dependent_field_;
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(StringOneofFieldGenerator);
 };
 
@@ -118,21 +106,17 @@ class RepeatedStringFieldGenerator : public FieldGenerator {
   void GenerateSwappingCode(io::Printer* printer) const;
   void GenerateConstructorCode(io::Printer* printer) const;
   void GenerateCopyConstructorCode(io::Printer* printer) const;
-  void GenerateMergeFromCodedStream(io::Printer* printer) const;
-  void GenerateSerializeWithCachedSizes(io::Printer* printer) const;
   void GenerateSerializeWithCachedSizesToArray(io::Printer* printer) const;
   void GenerateByteSize(io::Printer* printer) const;
+  void GenerateConstinitInitializer(io::Printer* printer) const;
 
  private:
-  const FieldDescriptor* descriptor_;
-  std::map<string, string> variables_;
-
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(RepeatedStringFieldGenerator);
 };
 
 }  // namespace cpp
 }  // namespace compiler
 }  // namespace protobuf
-
 }  // namespace google
+
 #endif  // GOOGLE_PROTOBUF_COMPILER_CPP_STRING_FIELD_H__

@@ -5,6 +5,7 @@ import com.google.caliper.BeforeExperiment;
 import com.google.caliper.AfterExperiment;
 import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
+import com.google.caliper.api.VmOptions;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.ExtensionRegistry;
@@ -22,6 +23,12 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
 
+// Caliper set CICompilerCount to 1 for making sure compilation doesn't run in parallel with itself,
+// This makes TieredCompilation not working. We just disable TieredCompilation by default. In master
+// branch this has been disabled by default in caliper:
+// https://github.com/google/caliper/blob/master/caliper-runner/src/main/java/com/google/caliper/runner/target/Jvm.java#L38:14
+// But this haven't been added into most recent release.
+@VmOptions("-XX:-TieredCompilation")
 public class ProtoCaliperBenchmark {
   public enum BenchmarkMessageType {
     GOOGLE_MESSAGE1_PROTO3 {
@@ -82,7 +89,7 @@ public class ProtoCaliperBenchmark {
         return com.google.protobuf.benchmarks.BenchmarkMessage4.GoogleMessage4.getDefaultInstance();
       }
     };
-    
+
     abstract ExtensionRegistry getExtensionRegistry();
     abstract Message getDefaultInstance();
   }
@@ -90,7 +97,7 @@ public class ProtoCaliperBenchmark {
   private BenchmarkMessageType benchmarkMessageType;
   @Param("")
   private String dataFile;
-  
+
   private byte[] inputData;
   private BenchmarkDataset benchmarkDataset;
   private Message defaultMessage;
@@ -99,7 +106,6 @@ public class ProtoCaliperBenchmark {
   private List<ByteArrayInputStream> inputStreamList;
   private List<ByteString> inputStringList;
   private List<Message> sampleMessageList;
-  private long counter;
 
   private BenchmarkMessageType getMessageType() throws IOException {
     if (benchmarkDataset.getMessageName().equals("benchmarks.proto3.GoogleMessage1")) {
@@ -119,7 +125,7 @@ public class ProtoCaliperBenchmark {
           + benchmarkDataset.getMessageName());
     }
   }
-  
+
   @BeforeExperiment
   void setUp() throws IOException {
     if (!dataFile.equals("")) {
@@ -139,7 +145,7 @@ public class ProtoCaliperBenchmark {
     inputStreamList = new ArrayList<ByteArrayInputStream>();
     inputStringList = new ArrayList<ByteString>();
     sampleMessageList = new ArrayList<Message>();
-    
+
     for (int i = 0; i < benchmarkDataset.getPayloadCount(); i++) {
       byte[] singleInputData = benchmarkDataset.getPayload(i).toByteArray();
       inputDataList.add(benchmarkDataset.getPayload(i).toByteArray());
@@ -149,97 +155,60 @@ public class ProtoCaliperBenchmark {
       sampleMessageList.add(
           defaultMessage.newBuilderForType().mergeFrom(singleInputData, extensions).build());
     }
-    
-    counter = 0;
   }
-  
-  
-  @Benchmark
-  void serializeToByteString(int reps) throws IOException {
-    if (sampleMessageList.size() == 0) {
-      return;
-    }
-    for (int i = 0; i < reps; i++) {
-      sampleMessageList.get((int) (counter % sampleMessageList.size())).toByteString();
-      counter++;
-    }
-  }
-  
+
+
   @Benchmark
   void serializeToByteArray(int reps) throws IOException {
     if (sampleMessageList.size() == 0) {
       return;
     }
     for (int i = 0; i < reps; i++) {
-      sampleMessageList.get((int) (counter % sampleMessageList.size())).toByteArray();
-      counter++;
+      for (int j = 0; j < sampleMessageList.size(); j++) {
+        sampleMessageList.get(j).toByteArray();
+      }
     }
   }
-  
+
   @Benchmark
   void serializeToMemoryStream(int reps) throws IOException {
     if (sampleMessageList.size() == 0) {
       return;
     }
     for (int i = 0; i < reps; i++) {
-      ByteArrayOutputStream output = new ByteArrayOutputStream();
-      sampleMessageList.get((int) (counter % sampleMessageList.size())).writeTo(output);
-      counter++;
+      for (int j = 0; j < sampleMessageList.size(); j++) {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        sampleMessageList.get(j).writeTo(output);
+      }
     }
   }
-  
-  @Benchmark
-  void deserializeFromByteString(int reps) throws IOException {
-    if (inputStringList.size() == 0) {
-      return;
-    }
-    for (int i = 0; i < reps; i++) {
-      benchmarkMessageType.getDefaultInstance().getParserForType().parseFrom(
-          inputStringList.get((int) (counter % inputStringList.size())), extensions);
-      counter++;
-    }
-  }
-  
+
   @Benchmark
   void deserializeFromByteArray(int reps) throws IOException {
     if (inputDataList.size() == 0) {
       return;
     }
     for (int i = 0; i < reps; i++) {
-      benchmarkMessageType.getDefaultInstance().getParserForType().parseFrom(
-          inputDataList.get((int) (counter % inputDataList.size())), extensions);
-      counter++;
+      for (int j = 0; j < inputDataList.size(); j++) {
+        benchmarkMessageType.getDefaultInstance().getParserForType().parseFrom(
+          inputDataList.get(j), extensions);
+      }
     }
   }
-  
+
   @Benchmark
   void deserializeFromMemoryStream(int reps) throws IOException {
     if (inputStreamList.size() == 0) {
       return;
     }
     for (int i = 0; i < reps; i++) {
-      benchmarkMessageType.getDefaultInstance().getParserForType().parseFrom(
-          inputStreamList.get((int) (counter % inputStreamList.size())), extensions);
-      inputStreamList.get((int) (counter % inputStreamList.size())).reset();
-      counter++;
-    }
-  }
-  
-  @AfterExperiment
-  void checkCounter() throws IOException {
-    if (counter == 1) {
-      // Dry run
-      return;
-    }
-    if (benchmarkDataset.getPayloadCount() != 1 
-        && counter < benchmarkDataset.getPayloadCount() * 10L) {
-      BufferedWriter writer = new BufferedWriter(new FileWriter("JavaBenchmarkWarning.txt", true));
-      // If the total number of non-warmup reps is smaller than 100 times of the total number of 
-      // datasets, then output the scale that need to multiply to the configuration (either extend
-      // the running time for one timingInterval or run for more measurements). 
-      writer.append(1.0 * benchmarkDataset.getPayloadCount() * 10L / counter + " ");
-      writer.close();
+      for (int j = 0; j < inputStreamList.size(); j++) {
+        benchmarkMessageType.getDefaultInstance().getParserForType().parseFrom(
+            inputStreamList.get(j), extensions);
+        inputStreamList.get(j).reset();
+      }
     }
   }
 }
+
 

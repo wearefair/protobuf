@@ -32,6 +32,7 @@ package com.google.protobuf;
 
 import static java.util.Arrays.asList;
 
+import com.google.protobuf.Internal.IntList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
@@ -44,10 +45,8 @@ import junit.framework.TestCase;
  */
 public class IntArrayListTest extends TestCase {
 
-  private static final IntArrayList UNARY_LIST =
-      newImmutableIntArrayList(1);
-  private static final IntArrayList TERTIARY_LIST =
-      newImmutableIntArrayList(1, 2, 3);
+  private static final IntArrayList UNARY_LIST = newImmutableIntArrayList(1);
+  private static final IntArrayList TERTIARY_LIST = newImmutableIntArrayList(1, 2, 3);
 
   private IntArrayList list;
 
@@ -140,6 +139,68 @@ public class IntArrayListTest extends TestCase {
     }
   }
 
+  public void testIndexOf_nullElement() {
+    assertEquals(-1, TERTIARY_LIST.indexOf(null));
+  }
+
+  public void testIndexOf_incompatibleElementType() {
+    assertEquals(-1, TERTIARY_LIST.indexOf(new Object()));
+  }
+
+  public void testIndexOf_notInList() {
+    assertEquals(-1, UNARY_LIST.indexOf(2));
+  }
+
+  public void testIndexOf_notInListWithDuplicates() {
+    IntArrayList listWithDupes = newImmutableIntArrayList(1, 1);
+    assertEquals(-1, listWithDupes.indexOf(2));
+  }
+
+  public void testIndexOf_inList() {
+    assertEquals(1, TERTIARY_LIST.indexOf(2));
+  }
+
+  public void testIndexOf_inListWithDuplicates_matchAtHead() {
+    IntArrayList listWithDupes = newImmutableIntArrayList(1, 1, 2);
+    assertEquals(0, listWithDupes.indexOf(1));
+  }
+
+  public void testIndexOf_inListWithDuplicates_matchMidList() {
+    IntArrayList listWithDupes = newImmutableIntArrayList(2, 1, 1, 2);
+    assertEquals(1, listWithDupes.indexOf(1));
+  }
+
+  public void testContains_nullElement() {
+    assertEquals(false, TERTIARY_LIST.contains(null));
+  }
+
+  public void testContains_incompatibleElementType() {
+    assertEquals(false, TERTIARY_LIST.contains(new Object()));
+  }
+
+  public void testContains_notInList() {
+    assertEquals(false, UNARY_LIST.contains(2));
+  }
+
+  public void testContains_notInListWithDuplicates() {
+    IntArrayList listWithDupes = newImmutableIntArrayList(1, 1);
+    assertEquals(false, listWithDupes.contains(2));
+  }
+
+  public void testContains_inList() {
+    assertEquals(true, TERTIARY_LIST.contains(2));
+  }
+
+  public void testContains_inListWithDuplicates_matchAtHead() {
+    IntArrayList listWithDupes = newImmutableIntArrayList(1, 1, 2);
+    assertEquals(true, listWithDupes.contains(1));
+  }
+
+  public void testContains_inListWithDuplicates_matchMidList() {
+    IntArrayList listWithDupes = newImmutableIntArrayList(2, 1, 1, 2);
+    assertEquals(true, listWithDupes.contains(1));
+  }
+
   public void testSize() {
     assertEquals(0, IntArrayList.emptyList().size());
     assertEquals(1, UNARY_LIST.size());
@@ -224,9 +285,7 @@ public class IntArrayListTest extends TestCase {
     for (int i = 0; i < 6; i++) {
       list.add(Integer.valueOf(5 + i));
     }
-    assertEquals(
-        asList(0, 1, 4, 2, 3, 5, 6, 7, 8, 9, 10),
-        list);
+    assertEquals(asList(0, 1, 4, 2, 3, 5, 6, 7, 8, 9, 10), list);
 
     try {
       list.add(-1, 5);
@@ -269,6 +328,13 @@ public class IntArrayListTest extends TestCase {
     assertFalse(list.addAll(IntArrayList.emptyList()));
   }
 
+  public void testEquals() {
+    IntArrayList list1 = new IntArrayList();
+    IntArrayList list2 = new IntArrayList();
+
+    assertEquals(list1, list2);
+  }
+
   public void testRemove() {
     list.addAll(TERTIARY_LIST);
     assertEquals(1, (int) list.remove(0));
@@ -297,7 +363,30 @@ public class IntArrayListTest extends TestCase {
     }
   }
 
-  private void assertImmutable(IntArrayList list) {
+  public void testRemoveEnd_listAtCapacity() {
+    IntList toRemove = IntArrayList.emptyList().mutableCopyWithCapacity(1);
+    toRemove.addInt(3);
+    toRemove.remove(0);
+    assertEquals(0, toRemove.size());
+  }
+
+  public void testRemove_listAtCapacity() {
+    IntList toRemove = IntArrayList.emptyList().mutableCopyWithCapacity(2);
+    toRemove.addInt(3);
+    toRemove.addInt(4);
+    toRemove.remove(0);
+    assertEquals(1, toRemove.size());
+    assertEquals(4, (int) toRemove.get(0));
+  }
+
+  public void testSublistRemoveEndOfCapacity() {
+    IntList toRemove = IntArrayList.emptyList().mutableCopyWithCapacity(1);
+    toRemove.addInt(3);
+    toRemove.subList(0, 1).clear();
+    assertEquals(0, toRemove.size());
+  }
+
+  private void assertImmutable(IntList list) {
     if (list.contains(1)) {
       throw new RuntimeException("Cannot test the immutability of lists that contain 1.");
     }
