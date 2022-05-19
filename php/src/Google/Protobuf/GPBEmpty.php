@@ -15,16 +15,23 @@ use Google\Protobuf\Internal\GPBUtil;
  *     service Foo {
  *       rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);
  *     }
- * The JSON representation for `Empty` is empty JSON object `{}`.
  *
  * Generated from protobuf message <code>google.protobuf.Empty</code>
  */
 class GPBEmpty extends \Google\Protobuf\Internal\Message
 {
 
-    public function __construct() {
+    /**
+     * Constructor.
+     *
+     * @param array $data {
+     *     Optional. Data for populating the Message object.
+     *
+     * }
+     */
+    public function __construct($data = NULL) {
         \GPBMetadata\Google\Protobuf\GPBEmpty::initOnce();
-        parent::__construct();
+        parent::__construct($data);
     }
 
 }
